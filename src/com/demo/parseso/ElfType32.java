@@ -4,13 +4,13 @@ import java.util.ArrayList;
 
 public class ElfType32 {
 	
-	public elf32_rel rel;
-	public elf32_rela rela;
-	public ArrayList<Elf32_Sym> symList = new ArrayList<Elf32_Sym>();
-	public elf32_hdr hdr;//elfͷ����Ϣ
-	public ArrayList<elf32_phdr> phdrList = new ArrayList<elf32_phdr>();//���ܻ��ж������ͷ
-	public ArrayList<elf32_shdr> shdrList = new ArrayList<elf32_shdr>();//���ܻ��ж����ͷ
-	public ArrayList<elf32_strtb> strtbList = new ArrayList<elf32_strtb>();//���ܻ��ж���ַ���ֵ
+	public elf32_rel rel;//重定位表项
+	public elf32_rela rela;//重定位表项
+	public ArrayList<Elf32_Sym> symList = new ArrayList<Elf32_Sym>();//符号表(Symbol Table)
+	public elf32_hdr hdr;//elf头部信息
+	public ArrayList<elf32_phdr> phdrList = new ArrayList<elf32_phdr>();//可能会有多个程序头
+	public ArrayList<elf32_shdr> shdrList = new ArrayList<elf32_shdr>();//可能会有多个段头
+	public ArrayList<elf32_strtb> strtbList = new ArrayList<elf32_strtb>();//可能会有多个字符串值
 	
 	public ElfType32() {
 		rel = new elf32_rel();
@@ -43,8 +43,11 @@ public class ElfType32 {
 		} Elf32_Rela;
 	 */
 	public class elf32_rela{
+		//此成员给出了重定位动作所适用的位置。对于一个可重定位文件而言， 此值是从节区头部开始到将被重定位影响的存储单位之间的字节偏 移。对于可执行文件或者共享目标文件而言，其取值是被重定位影响 到的存储单元的虚拟地址。
 		public byte[] r_offset = new byte[4];
+		//此成员给出要进行重定位的符号表索引，以及将实施的重定位类型。 例如一个调用指令的重定位项将包含被调用函数的符号表索引。如果 索引是 STN_UNDEF，那么重定位使用 0 作为“符号值”。重定位类型是和处理器相关的。当程序代码引用一个重定位项的重定位类型或 者符号表索引，则表示对表项的 r_info 成员应用 ELF32_R_TYPE 或 者 ELF32_R_SYM 的结果。#define ELF32_R_SYM(i) ((i)>>8) #define ELF32_R_TYPE(i) ((unsigned char)(i)) #define ELF32_R_INFO(s, t) (((s)<<8) + (unsigned char)(t))
 		public byte[] r_info = new byte[4];
+		//此成员给出一个常量补齐，用来计算将被填充到可重定位字段的数值。
 		public byte[] r_addend = new byte[4];
 		
 		@Override
@@ -62,14 +65,15 @@ public class ElfType32 {
 		  unsigned char	st_other;
 		  Elf32_Half	st_shndx;
 		} Elf32_Sym;
+		符号表(Symbol Table)
 	 */
 	public static class Elf32_Sym{
-		public byte[] st_name = new byte[4];
-		public byte[] st_value = new byte[4];
-		public byte[] st_size = new byte[4];
-		public byte st_info;
-		public byte st_other;
-		public byte[] st_shndx = new byte[2];
+		public byte[] st_name = new byte[4];//包含目标文件符号字符串表的索引，其中包含符号名的字符串表示。如 果该值非 0，则它表示了给出符号名的字符串表索引，否则符号表项没 有名称。注:外部 C 符号在 C 语言和目标文件的符号表中具有相同的名称。
+		public byte[] st_value = new byte[4];//此成员给出相关联的符号的取值。依赖于具体的上下文，它可能是一个 绝对值、一个地址等等。
+		public byte[] st_size = new byte[4];//很多符号具有相关的尺寸大小。例如一个数据对象的大小是对象中包含 的字节数。如果符号没有大小或者大小 知，则此成员为 0。
+		public byte st_info;//符号类型和绑定信息，操纵方式
+		public byte st_other;//该成员当前包含 0，其含义没有定义。
+		public byte[] st_shndx = new byte[2];//每个符号表项都以和其他节区间的关系的方式给出定义。此成员给出相 关的节区头部表索引。某些索引具有特殊含义。
 		
 		@Override
 		public String toString(){
@@ -90,18 +94,18 @@ public class ElfType32 {
 		}
 	}
 	
-	//Bind�ֶ�==��st_info
+	//Bind字段==》st_info
 	public static final int STB_LOCAL = 0;
 	public static final int STB_GLOBAL = 1;
 	public static final int STB_WEAK = 2;
-	//Type�ֶ�==��st_other
+	//Type字段==》st_other
 	public static final int STT_NOTYPE = 0;
 	public static final int STT_OBJECT = 1;
 	public static final int STT_FUNC = 2;
 	public static final int STT_SECTION = 3;
 	public static final int STT_FILE = 4;
 	/**
-	 * ������Ҫע����ǻ���Ҫ��һ��ת��
+	 * 这里需要注意的是还需要做一次转化
 	 *  #define ELF_ST_BIND(x)	((x) >> 4)
 		#define ELF_ST_TYPE(x)	(((unsigned int) x) & 0xf)
 	 */
@@ -243,7 +247,7 @@ public class ElfType32 {
 		}
 	}
 	
-	/****************sh_type********************/
+	/****************sh_type 节区类型********************/
 	public static final int SHT_NULL = 0;
 	public static final int SHT_PROGBITS = 1;
 	public static final int SHT_SYMTAB = 2;
@@ -266,11 +270,11 @@ public class ElfType32 {
 	public static final int SHT_MIPS_GPTAB = 0x70000003;
 	public static final int SHT_MIPS_UCODE = 0x70000004;
 	
-	/*****************sh_flag***********************/
+	/*****************sh_flagsh_flags 字段定义了一个节区中包含的内容是否可以修改、是否可以执行等信息。 如果一个标志位被设置，则该位取值为 1。 定义的各位都设置为 0***********************/
 	public static final int SHF_WRITE = 0x1;
-	public static final int SHF_ALLOC = 0x2;
-	public static final int SHF_EXECINSTR = 0x4;
-	public static final int SHF_MASKPROC = 0xf0000000;
+	public static final int SHF_ALLOC = 0x2;//此节区在进程执行过程中占用内存。某些控制节区并不出现于目标文件的内存映像中，对于那些节区，此位应设置为 0。
+	public static final int SHF_EXECINSTR = 0x4;//节区包含可执行的机器指令。
+	public static final int SHF_MASKPROC = 0xf0000000;//所有包含于此掩码中的四位都用于处理器专用的语义
 	public static final int SHF_MIPS_GPREL = 0x10000000;
 	
 	public void printShdrList(){
